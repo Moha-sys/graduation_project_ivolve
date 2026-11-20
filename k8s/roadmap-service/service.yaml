@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: roadmap-service
+  namespace: ivolve
+  labels:
+    app: roadmap-service
+    tier: backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: roadmap-service

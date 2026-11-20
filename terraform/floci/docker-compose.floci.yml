@@ -1,0 +1,16 @@
+services:
+  floci:
+    image: floci/floci:latest
+    container_name: floci-aws-emulator
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: "s3,ec2,eks,ecr,iam,sts"
+      AWS_DEFAULT_REGION: "us-east-1"
+      DEBUG: "1"
+    volumes:
+      - floci_data:/var/lib/floci
+
+volumes:
+  floci_data:

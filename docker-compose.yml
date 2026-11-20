@@ -1,0 +1,98 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ivolve-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ivolve
+      MYSQL_USER: ivolveuser
+      MYSQL_PASSWORD: ivolvepassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ivolve-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    image: ivolve-auth-service:latest
+    container_name: ivolve-auth-service
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: ivolve
+      DB_USER: ivolveuser
+      DB_PASSWORD: ivolvepassword
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ivolve-network
+
+  roadmap-service:
+    build:
+      context: ./roadmap-service
+      dockerfile: Dockerfile
+    image: ivolve-roadmap-service:latest
+    container_name: ivolve-roadmap-service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - ivolve-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ivolve-frontend:latest
+    container_name: ivolve-frontend
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      AUTH_SERVICE_URL: "http://auth-service:5000"
+      ROADMAP_SERVICE_URL: "http://roadmap-service:8080"
+      SESSION_SECRET: "ivolve-graduation-project-secret-key-2024"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - roadmap-service
+    networks:
+      - ivolve-network
+
+  # Floci local cloud emulator (AWS emulation for Terraform & S3 Backend)
+  floci:
+    image: floci/floci:latest
+    container_name: ivolve-floci
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: "s3,ec2,eks,ecr,iam,sts"
+      AWS_DEFAULT_REGION: "us-east-1"
+    networks:
+      - ivolve-network
+
+networks:
+  ivolve-network:
+    name: ivolve-network
+    driver: bridge
+
+volumes:
+  mysql_data:
+    name: ivolve-mysql-data

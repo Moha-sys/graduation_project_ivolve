@@ -1,0 +1,31 @@
+---
+- name: Add Jenkins repository key
+  ansible.builtin.get_url:
+    url: "{{ jenkins_key_url }}"
+    dest: /usr/share/keyrings/jenkins-keyring.asc
+    mode: '0644'
+
+- name: Add Jenkins APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] {{ jenkins_repo_url }} binary/"
+    state: present
+    filename: jenkins
+
+- name: Install Jenkins LTS
+  ansible.builtin.apt:
+    name: "{{ jenkins_pkg }}"
+    state: present
+    update_cache: true
+  notify: Restart Jenkins
+
+- name: Ensure Jenkins service is started and enabled
+  ansible.builtin.systemd:
+    name: jenkins
+    state: started
+    enabled: true
+
+- name: Wait for Jenkins Web UI to become available
+  ansible.builtin.wait_for:
+    port: "{{ jenkins_port }}"
+    delay: 10
+    timeout: 120

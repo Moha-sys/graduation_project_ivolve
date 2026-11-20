@@ -1,0 +1,29 @@
+---
+- name: Configure Jenkins CI/CD EC2 Server
+  hosts: tag_Role_jenkins:&tag_Project_ivolve, jenkins_servers
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Ensure target host is accessible
+      ansible.builtin.ping:
+
+  roles:
+    - role: common
+    - role: java
+    - role: docker
+    - role: trivy
+    - role: jenkins
+
+  post_tasks:
+    - name: Verify all services are running
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - docker
+        - jenkins
+
+    - name: Output Jenkins initial admin password path
+      ansible.builtin.debug:
+        msg: "Jenkins is ready! Initial admin password can be retrieved from: /var/lib/jenkins/secrets/initialAdminPassword"

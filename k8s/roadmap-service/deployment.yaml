@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roadmap-service
+  namespace: ivolve
+  labels:
+    app: roadmap-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: roadmap-service
+  template:
+    metadata:
+      labels:
+        app: roadmap-service
+        tier: backend
+    spec:
+      containers:
+        - name: roadmap-service
+          image: mohadevv/ivolve-roadmap-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /api/roadmap
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/roadmap
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3

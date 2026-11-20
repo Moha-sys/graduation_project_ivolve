@@ -1,0 +1,62 @@
+@Library('ivolve-shared-library') _
+
+pipeline {
+    agent any
+
+    environment {
+        SERVICE_NAME  = 'frontend'
+        IMAGE_NAME    = 'mohadevv/ivolve-frontend'
+        IMAGE_TAG     = "${BUILD_NUMBER}"
+        MANIFEST_PATH = 'k8s/frontend/deployment.yaml'
+        DOCKER_CREDS  = 'dockerhub-credentials'
+        GITHUB_CREDS  = 'github-credentials'
+    }
+
+    stages {
+        stage('Checkout Source Code') {
+            steps {
+                echo "Checking out source code..."
+                checkout scm
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                echo "Validating frontend service..."
+                runTests(serviceType: 'npm', workDir: 'frontend')
+            }
+        }
+
+        stage('Container CI (Build, Scan, Push, Cleanup)') {
+            steps {
+                buildImage(
+                    imageName: "${IMAGE_NAME}",
+                    imageTag: "${IMAGE_TAG}",
+                    dockerfileDir: 'frontend',
+                    credentialsId: "${DOCKER_CREDS}"
+                )
+            }
+        }
+
+        stage('GitOps CD (Update & Push Manifests)') {
+            steps {
+                updateManifests(
+                    imageName: "${IMAGE_NAME}",
+                    imageTag: "${IMAGE_TAG}",
+                    manifestPath: "${MANIFEST_PATH}",
+                    serviceName: "${SERVICE_NAME}",
+                    gitCredsId: "${GITHUB_CREDS}"
+                )
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "SUCCESS: ${SERVICE_NAME} pipeline completed! ArgoCD will synchronize the cluster."
+        }
+        failure {
+            echo "FAILURE: ${SERVICE_NAME} pipeline failed. Check logs."
+        }
+    }
+}

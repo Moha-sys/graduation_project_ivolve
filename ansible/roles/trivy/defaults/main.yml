@@ -1,0 +1,3 @@
+---
+trivy_version: "0.58.0"
+trivy_deb_url: "https://github.com/aquasecurity/trivy/releases/download/v{{ trivy_version }}/trivy_{{ trivy_version }}_Linux-64bit.deb"

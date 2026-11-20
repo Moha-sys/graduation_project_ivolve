@@ -1,0 +1,21 @@
+---
+- name: Install OpenJDK Java
+  ansible.builtin.apt:
+    name: "{{ java_package }}"
+    state: present
+    update_cache: true
+
+- name: Set JAVA_HOME environment variable
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    line: "JAVA_HOME={{ java_home }}"
+    state: present
+
+- name: Verify Java installation
+  ansible.builtin.command: java -version
+  register: java_version_output
+  changed_when: false
+
+- name: Display Java version
+  ansible.builtin.debug:
+    var: java_version_output.stderr_lines[0]
