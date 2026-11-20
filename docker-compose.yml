@@ -77,6 +77,7 @@ services:
 
   # Floci local cloud emulator (AWS emulation for Terraform & S3 Backend)
   floci:
+    profiles: ["emulation"]
     image: floci/floci:latest
     container_name: ivolve-floci
     restart: unless-stopped
